@@ -1,0 +1,44 @@
+---
+- hosts: webserver
+  become: true
+  become_user: root
+  gather_facts: no
+  tasks:
+
+      # - name: Install Requirements
+      #   yum:
+      #     name: gcc, openssl-devel, bzip2-devel, libffi-devel, zlib-devel, xz-devel
+      #     state: present
+
+      # - name: Download Python-3.7.11
+      #   ansible.builtin.get_url:
+      #     url: https://www.python.org/ftp/python/3.7.11/Python-3.7.11.tgz
+      #     dest: /usr/local
+
+      # - name: Extract python
+      #   ansible.builtin.unarchive:
+      #     src: /usr/local/Python-3.7.11.tgz
+      #     dest: /usr/local
+
+      # - name: Install python
+      #   shell: |
+      #     cd /usr/local/Python-3.7.11 && ./configure --enable-optimizations
+      #     cd /usr/local/Python-3.7.11 && make altinstall
+      #     rm /usr/local/Python-3.7.11.tgz
+      
+      - name: Install Python 3.7
+        shell: |
+          cd /usr/local
+          wget https://www.python.org/ftp/python/3.7.11/Python-3.7.11.tgz
+          tar xzf Python-3.7.11.tgz
+          cd Python-3.7.11
+          ./configure --enable-optimizations
+          make altinstall
+          ln -s /usr/local/bin/python3.7 /usr/bin/python3.7
+          ln -s /usr/local/bin/pip3.7 /usr/bin/pip3.7
+          rm /usr/local/Python-3.7.11.tgz
+      
+      - name: Install PIP3
+        yum:
+          name: python3-pip
+          state: present
