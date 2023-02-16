@@ -13,4 +13,4 @@
           - name: Create SSL
             ignore_errors: yes
             shell: |
-               yes | /opt/package/letsencrypt/certbot-auto certonly --webroot --agree-tos --no-eff-email --email support@trinix.id -w /var/www/letsencrypt {{ FS_MOUNTPOINT1 }}
+               yes | /opt/package/letsencrypt/certbot-auto certonly --webroot --agree-tos --no-eff-email --email support@trinix.id -w /var/www/letsencrypt -d {{ FS_MOUNTPOINT1 }}
