@@ -1,144 +1,144 @@
 ---
-# #----- tasks for NGINX -----#
+#----- tasks for NGINX -----#
 
-# - name: check deployer user
-#   action: user name=deployer state=present
+- name: check deployer user
+  action: user name=deployer state=present
 
-# - name: Install required packages
-#   yum:
-#     name: "{{ install_packages }}"
-#     state: present
-#   tags:
-#     - install_packages
+- name: Install required packages
+  yum:
+    name: "{{ install_packages }}"
+    state: present
+  tags:
+    - install_packages
 
-# - name: Create opt package
-#   file: path=/opt/package state=directory mode=0775
-#   tags: nginx
+- name: Create opt package
+  file: path=/opt/package state=directory mode=0775
+  tags: nginx
 
-# - name: Create nginx-test
-#   file: path=/opt/package/nginx-test state=directory mode=0775
-#   tags: nginx
+- name: Create nginx-test
+  file: path=/opt/package/nginx-test state=directory mode=0775
+  tags: nginx
 
-# - name: Get latest NGINX
-#   shell: |
-#      cd /opt/package
-#      latest="$(curl -s 'http://nginx.org/en/download.html' | sed 's/</\'$'\n''</g' | sed -n '/>Stable version$/,$ p' | egrep -m1 -o '/download/nginx-.+\.tar\.gz')"
-#      curl "http://nginx.org$latest" > nginx-latest.tar.gz
-#   tags: nginx
+- name: Get latest NGINX
+  shell: |
+     cd /opt/package
+     latest="$(curl -s 'http://nginx.org/en/download.html' | sed 's/</\'$'\n''</g' | sed -n '/>Stable version$/,$ p' | egrep -m1 -o '/download/nginx-.+\.tar\.gz')"
+     curl "http://nginx.org$latest" > nginx-latest.tar.gz
+  tags: nginx
 
-# - name: Compile nginx
-#   shell: |
-#     getname="$(curl -s 'http://nginx.org/en/download.html' | sed 's/</\'$'\n''</g' | sed -n '/>Stable version$/,$ p' | egrep -m1 -o 'nginx-.+\.tar'  | cut -d '.' -f1-3)"
-#     cd /opt/package/
-#     tar zxvf nginx-latest.tar.gz
-#     cd $getname
-#     ./configure --prefix=/usr/local/nginx --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-http_auth_request_module --with-mail --with-mail_ssl_module --with-file-aio
-#     make && make install
-#   tags: nginx
+- name: Compile nginx
+  shell: |
+    getname="$(curl -s 'http://nginx.org/en/download.html' | sed 's/</\'$'\n''</g' | sed -n '/>Stable version$/,$ p' | egrep -m1 -o 'nginx-.+\.tar'  | cut -d '.' -f1-3)"
+    cd /opt/package/
+    tar zxvf nginx-latest.tar.gz
+    cd $getname
+    ./configure --prefix=/usr/local/nginx --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-http_auth_request_module --with-mail --with-mail_ssl_module --with-file-aio
+    make && make install
+  tags: nginx
 
-# - name: Create Folder trx
-#   file:
-#     path: /var/log/trx/
-#     state: directory
-#     mode: 0755
-#   tags: nginx
+- name: Create Folder trx
+  file:
+    path: /var/log/trx/
+    state: directory
+    mode: 0755
+  tags: nginx
 
-# - name: create file nginx-error.log
-#   file:
-#     path: /var/log/trx/nginx-error.log
-#     state: touch
-#     mode: 0755
-#   tags: nginx
+- name: create file nginx-error.log
+  file:
+    path: /var/log/trx/nginx-error.log
+    state: touch
+    mode: 0755
+  tags: nginx
 
-# - name: ensure file exists
-#   copy:
-#     content: ""
-#     dest: /usr/local/nginx/conf/retno.conf
-#     owner: root
-#     mode: 0775
-#   tags: nginx
+- name: ensure file exists
+  copy:
+    content: ""
+    dest: /usr/local/nginx/conf/retno.conf
+    owner: root
+    mode: 0775
+  tags: nginx
 
-# - name: Create retno.conf
-#   template:
-#     src: templates/retno.conf.j2
-#     dest: /usr/local/nginx/conf/retno.conf
-#   tags: nginx
+- name: Create retno.conf
+  template:
+    src: templates/retno.conf.j2
+    dest: /usr/local/nginx/conf/retno.conf
+  tags: nginx
 
-# - name: Nginx.conf
-#   template:
-#     src: templates/nginx.conf.j2
-#     dest: /usr/local/nginx/conf/nginx.conf
-#   tags: nginx
+- name: Nginx.conf
+  template:
+    src: templates/nginx.conf.j2
+    dest: /usr/local/nginx/conf/nginx.conf
+  tags: nginx
 
-# - name: Delete EOF
-#   lineinfile: dest=/usr/local/nginx/conf/nginx.conf
-#      state=absent 
-#      regexp='EOF'
-#   tags: nginx
+- name: Delete EOF
+  lineinfile: dest=/usr/local/nginx/conf/nginx.conf
+     state=absent 
+     regexp='EOF'
+  tags: nginx
 
-# - name: Create conf.d Dir
-#   file: path=/usr/local/nginx/conf.d state=directory mode=0775
-#   tags: nginx
+- name: Create conf.d Dir
+  file: path=/usr/local/nginx/conf.d state=directory mode=0775
+  tags: nginx
 
-# - name: Create symbolic link
-#   shell: |
-#     ln -s /usr/local/nginx/sbin/nginx /usr/bin/nginx
-#     mkdir -p /usr/local/nginx/ssl
-#   tags: nginx
+- name: Create symbolic link
+  shell: |
+    ln -s /usr/local/nginx/sbin/nginx /usr/bin/nginx
+    mkdir -p /usr/local/nginx/ssl
+  tags: nginx
 
-# - name: start nginx service
-#   shell: |
-#     /usr/local/nginx/sbin/nginx
-#     sed -i '12 i /usr/local/nginx/sbin/nginx' /etc/rc.local
-#   tags: nginx
+- name: start nginx service
+  shell: |
+    /usr/local/nginx/sbin/nginx
+    sed -i '12 i /usr/local/nginx/sbin/nginx' /etc/rc.local
+  tags: nginx
 
-# - name: Create Conf.d directory
-#   file:
-#     path: /usr/local/nginx/conf.d
-#     state: directory
-#   tags: nginx
+- name: Create Conf.d directory
+  file:
+    path: /usr/local/nginx/conf.d
+    state: directory
+  tags: nginx
 
-# - name: Create Directory Path for Domain "{{ FS_MOUNTPOINT1 }}"
-#   shell: |
-#     [[ ! -d /sites/apps/{{ FS_MOUNTPOINT1 }} ]] &&  mkdir -p /sites/apps/{{ FS_MOUNTPOINT1 }}/www \
-#     && chown -R {{ USER }}:{{ USER }} /sites/apps/{{ FS_MOUNTPOINT1 }}
-#     mkdir -p /var/log/trx/{{ FS_MOUNTPOINT1 }}.log
-#     chown -R {{ USER }}:{{ USER }} /var/log/trx/
-#   tags: nginx
+- name: Create Directory Path for Domain "{{ FS_MOUNTPOINT1 }}"
+  shell: |
+    [[ ! -d /sites/apps/{{ FS_MOUNTPOINT1 }} ]] &&  mkdir -p /sites/apps/{{ FS_MOUNTPOINT1 }}/www \
+    && chown -R {{ USER }}:{{ USER }} /sites/apps/{{ FS_MOUNTPOINT1 }}
+    mkdir -p /var/log/trx/{{ FS_MOUNTPOINT1 }}.log
+    chown -R {{ USER }}:{{ USER }} /var/log/trx/
+  tags: nginx
 
-# - name: Create vhost "{{ FS_MOUNTPOINT1 }}"
-#   shell: |
-#     touch /usr/local/nginx/conf.d/{{ FS_MOUNTPOINT1 }}.conf
-#     mkdir -p /var/www/letsencrypt/.well-known/acme-challenge/
-#   tags: nginx
+- name: Create vhost "{{ FS_MOUNTPOINT1 }}"
+  shell: |
+    touch /usr/local/nginx/conf.d/{{ FS_MOUNTPOINT1 }}.conf
+    mkdir -p /var/www/letsencrypt/.well-known/acme-challenge/
+  tags: nginx
 
-# - name: Insert Vhost
-#   template:
-#     src: templates/vhost.conf.j2
-#     dest: /usr/local/nginx/conf.d/{{ FS_MOUNTPOINT1 }}.conf
-#   notify: Restart the Nginx service
-#   tags: nginx
+- name: Insert Vhost
+  template:
+    src: templates/vhost.conf.j2
+    dest: /usr/local/nginx/conf.d/{{ FS_MOUNTPOINT1 }}.conf
+  notify: Restart the Nginx service
+  tags: nginx
 
-# #----- tasks for PHP -----#
+#----- tasks for PHP -----#
 
-# - name: Create opt package directory
-#   file: path=/opt/package state=directory mode=0775
-#   tags: php
+- name: Create opt package directory
+  file: path=/opt/package state=directory mode=0775
+  tags: php
        
-# - name: Create /var/run/fpm directory
-#   file: path=/var/run/fpm state=directory mode=0775
-#   tags: php
+- name: Create /var/run/fpm directory
+  file: path=/var/run/fpm state=directory mode=0775
+  tags: php
   
-# - name: remove libzip and libzip-devel
-#   shell: yum remove -y libzip libzip-devel
-#   tags: php
+- name: remove libzip and libzip-devel
+  shell: yum remove -y libzip libzip-devel
+  tags: php
 
-# - name: install remi repo
-#   shell: | 
-#      cd /opt/package
-#      rpm -ivh http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-#      yum install -y libzip-last-devel libzip-last --enablerepo=remi
-#   tags: php
+- name: install remi repo
+  shell: | 
+     cd /opt/package
+     rpm -ivh http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+     yum install -y libzip-last-devel libzip-last --enablerepo=remi
+  tags: php
 
 - name: Download stable php release
   shell: |
