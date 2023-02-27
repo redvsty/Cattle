@@ -1,0 +1,4 @@
+- hosts: "{{ FS_MOUNTPOINT }}"
+  become: true
+  roles:
+    - role: lemp
