@@ -1,0 +1,289 @@
+---
+# #----- tasks for NGINX -----#
+
+# - name: check deployer user
+#   action: user name=deployer state=present
+
+# - name: Install required packages
+#   yum:
+#     name: "{{ install_packages }}"
+#     state: present
+#   tags:
+#     - install_packages
+
+# - name: Create opt package
+#   file: path=/opt/package state=directory mode=0775
+#   tags: nginx
+
+# - name: Create nginx-test
+#   file: path=/opt/package/nginx-test state=directory mode=0775
+#   tags: nginx
+
+# - name: Get latest NGINX
+#   shell: |
+#      cd /opt/package
+#      latest="$(curl -s 'http://nginx.org/en/download.html' | sed 's/</\'$'\n''</g' | sed -n '/>Stable version$/,$ p' | egrep -m1 -o '/download/nginx-.+\.tar\.gz')"
+#      curl "http://nginx.org$latest" > nginx-latest.tar.gz
+#   tags: nginx
+
+# - name: Compile nginx
+#   shell: |
+#     getname="$(curl -s 'http://nginx.org/en/download.html' | sed 's/</\'$'\n''</g' | sed -n '/>Stable version$/,$ p' | egrep -m1 -o 'nginx-.+\.tar'  | cut -d '.' -f1-3)"
+#     cd /opt/package/
+#     tar zxvf nginx-latest.tar.gz
+#     cd $getname
+#     ./configure --prefix=/usr/local/nginx --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-http_auth_request_module --with-mail --with-mail_ssl_module --with-file-aio
+#     make && make install
+#   tags: nginx
+
+# - name: Create Folder trx
+#   file:
+#     path: /var/log/trx/
+#     state: directory
+#     mode: 0755
+#   tags: nginx
+
+# - name: create file nginx-error.log
+#   file:
+#     path: /var/log/trx/nginx-error.log
+#     state: touch
+#     mode: 0755
+#   tags: nginx
+
+# - name: ensure file exists
+#   copy:
+#     content: ""
+#     dest: /usr/local/nginx/conf/retno.conf
+#     owner: root
+#     mode: 0775
+#   tags: nginx
+
+# - name: Create retno.conf
+#   template:
+#     src: templates/retno.conf.j2
+#     dest: /usr/local/nginx/conf/retno.conf
+#   tags: nginx
+
+# - name: Nginx.conf
+#   template:
+#     src: templates/nginx.conf.j2
+#     dest: /usr/local/nginx/conf/nginx.conf
+#   tags: nginx
+
+# - name: Delete EOF
+#   lineinfile: dest=/usr/local/nginx/conf/nginx.conf
+#      state=absent 
+#      regexp='EOF'
+#   tags: nginx
+
+# - name: Create conf.d Dir
+#   file: path=/usr/local/nginx/conf.d state=directory mode=0775
+#   tags: nginx
+
+# - name: Create symbolic link
+#   shell: |
+#     ln -s /usr/local/nginx/sbin/nginx /usr/bin/nginx
+#     mkdir -p /usr/local/nginx/ssl
+#   tags: nginx
+
+# - name: start nginx service
+#   shell: |
+#     /usr/local/nginx/sbin/nginx
+#     sed -i '12 i /usr/local/nginx/sbin/nginx' /etc/rc.local
+#   tags: nginx
+
+# - name: Create Conf.d directory
+#   file:
+#     path: /usr/local/nginx/conf.d
+#     state: directory
+#   tags: nginx
+
+# - name: Create Directory Path for Domain "{{ FS_MOUNTPOINT1 }}"
+#   shell: |
+#     [[ ! -d /sites/apps/{{ FS_MOUNTPOINT1 }} ]] &&  mkdir -p /sites/apps/{{ FS_MOUNTPOINT1 }}/www \
+#     && chown -R {{ USER }}:{{ USER }} /sites/apps/{{ FS_MOUNTPOINT1 }}
+#     mkdir -p /var/log/trx/{{ FS_MOUNTPOINT1 }}.log
+#     chown -R {{ USER }}:{{ USER }} /var/log/trx/
+#   tags: nginx
+
+# - name: Create vhost "{{ FS_MOUNTPOINT1 }}"
+#   shell: |
+#     touch /usr/local/nginx/conf.d/{{ FS_MOUNTPOINT1 }}.conf
+#     mkdir -p /var/www/letsencrypt/.well-known/acme-challenge/
+#   tags: nginx
+
+# - name: Insert Vhost
+#   template:
+#     src: templates/vhost.conf.j2
+#     dest: /usr/local/nginx/conf.d/{{ FS_MOUNTPOINT1 }}.conf
+#   notify: Restart the Nginx service
+#   tags: nginx
+
+# #----- tasks for PHP -----#
+
+# - name: Create opt package directory
+#   file: path=/opt/package state=directory mode=0775
+#   tags: php
+       
+# - name: Create /var/run/fpm directory
+#   file: path=/var/run/fpm state=directory mode=0775
+#   tags: php
+  
+# - name: remove libzip and libzip-devel
+#   shell: yum remove -y libzip libzip-devel
+#   tags: php
+
+# - name: install remi repo
+#   shell: | 
+#      cd /opt/package
+#      rpm -ivh http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+#      yum install -y libzip-last-devel libzip-last --enablerepo=remi
+#   tags: php
+
+- name: Download stable php release
+  shell: |
+    yum -y install bzip2
+    cd /opt/package
+    wget --no-check-certificate https://www.php.net/distributions/php-{{ FS_MOUNTPOINT2 }}.tar.bz2 
+    tar -jxvf php-{{ FS_MOUNTPOINT2 }}.tar.bz2
+    mkdir /var/log/trx -p
+  tags: php
+
+- name: Install devtoolset-8
+  shell: | 
+    yum -y install yum-utils
+    yum -y install centos-release-scl
+    yum-config-manager --enable rhel-server-rhscl-7-rpms
+    yum -y install devtoolset-8
+    source /opt/rh/devtoolset-8/enable
+  tags: php
+
+- name: Compile php "{{ FS_MOUNTPOINT2 }}"
+  async: 9000
+  poll: 5
+  shell: |
+    cd /opt/package/php-{{ FS_MOUNTPOINT2 }}
+    ./configure --prefix=/usr/local/php{{ FS_MOUNTPOINT2 }} {{ MODULES }}
+    make clean 
+    make install
+  tags: php
+
+- name: Copy file php configuration .conf to server
+  template:
+    src: templates/server.conf.j2
+    dest: /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php-fpm.d/server.conf
+  tags: php
+
+- name: Create config PHP-FPM
+  shell: |
+    cp /opt/package/php-{{ FS_MOUNTPOINT2 }}/php.ini-production /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+    cp /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php-fpm.conf.default  /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php-fpm.conf 
+    cp /opt/package/php-{{ FS_MOUNTPOINT2 }}/sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm{{ FS_MOUNTPOINT2 }}
+    chmod +x /etc/init.d/php-fpm{{ FS_MOUNTPOINT2 }}
+    sed -i 's/server-app/server-app{{ FS_MOUNTPOINT2 }}/g' /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php-fpm.d/server.conf
+    sed -i -e '$ainclude=/usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php-fpm.d/*.conf' /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php-fpm.conf 
+    chkconfig php-fpm{{ FS_MOUNTPOINT2 }} on
+  tags: php
+
+- name: Set date.timezone php.ini
+  lineinfile:
+    dest: /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+    regexp: "date.timezone ="
+    line: "date.timezone = Asia/Jakarta"
+  tags: php
+
+- name: Set Memory limit php.ini
+  lineinfile:
+     dest: /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+     regexp: "memory_limit = "
+     line: "memory_limit = 1024M"
+  tags: php
+
+- name: Set Max Post php.ini
+  lineinfile:
+     dest: /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+     regexp: "post_max_size ="
+     line: "post_max_size = 100M"
+  tags: php
+          
+- name: Set Max execution php.ini
+  lineinfile:
+     dest: /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+     regexp: "max_execution_time ="
+     line: "max_execution_time = 300"
+  tags: php
+
+- name: Set Upload Max Size php.ini
+  lineinfile:
+     dest: /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+     regexp: "upload_max_filesize ="
+     line: "upload_max_filesize = 100M"
+  tags: php
+
+- name: Add Opcache php.ini
+  shell: |
+      sed -i '3izend_extension=opcache.so\nopcache.enable=1\nopcache.revalidate_freq=30\nopcache.validate_timestamps=1\nopcache.max_accelerated_files=7963\nopcache.memory_consumption=2048\nopcache.interned_strings_buffer=16\nopcache.fast_shutdown=1' /usr/local/php{{ FS_MOUNTPOINT2 }}/etc/php.ini
+  tags: php
+
+- name: Symbolic link php
+  shell: |
+    ln -s /usr/local/php{{ FS_MOUNTPOINT2 }}/bin/php /usr/bin/
+  notify: Restart the PHP service
+  tags: php
+
+#----- tasks for MySQL -----#
+
+- name: Install Mysql Community Server
+  async: 5000
+  poll: 5
+  shell: |
+    if [[ {{ FS_MOUNTPOINT3 }} -eq 57 ]]; then
+     rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022              
+     rpm -e --nodeps mysql80-community-release-el7-3.noarch
+     rpm -ivh https://dev.mysql.com/get/mysql57-community-release-el7-9.noarch.rpm
+     yum --enablerepo=mysql57-community install -y mysql-community-server
+    else 
+     rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 
+     rpm -ivh https://repo.mysql.com/mysql80-community-release-el7-3.noarch.rpm
+     sed -i 's/enabled=1/enabled=0/' /etc/yum.repos.d/mysql-community.repo
+     yum --enablerepo=mysql80-community install -y mysql-community-server
+    fi
+  tags: mysql
+
+- name: Mysql Service
+  shell: |
+     service mysqld start
+     chkconfig mysqld on
+  tags: mysql
+
+- name: Get Mysql Root Password
+  shell: |
+   grep 'A temporary password' /var/log/mysqld.log |tail -1 |awk '{split($0,a,": "); print a[2]}'
+  register: with_output
+  tags: mysql
+
+- name: Change Mysql Root Password
+  shell: |
+     user="root"
+     password="{{ with_output.stdout_lines }}"
+     host="127.0.0.1"
+     mysql --connect-expired-password --user=$user --password="{{ item }}" --host=$host -e "ALTER USER 'root'@'localhost' IDENTIFIED  BY '{{ FS_MOUNTPOINT4 }}';"
+  with_items: 
+    - "{{ with_output.stdout_lines }}"
+  tags: mysql
+
+#----- tasks for LetsEncrypt -----#
+
+- name: Download Letsencrypt
+  shell: |
+    git clone https://github.com/letsencrypt/letsencrypt /opt/package/letsencrypt
+    wget https://raw.githubusercontent.com/certbot/certbot/7f0fa18c570942238a7de73ed99945c3710408b4/letsencrypt-auto-source/letsencrypt-auto -O /opt/package/letsencrypt/certbot-auto
+    chmod 0755 /opt/package/letsencrypt/certbot-auto
+    mkdir -p /var/www/letsencrypt/.well-known/acme-challenge/
+  tags: ssl
+
+- name: Create SSL
+  shell: |
+    yes | /opt/package/letsencrypt/certbot-auto certonly --renew-by-default --webroot --agree-tos --no-eff-email --email support@trinix.id -w /var/www/letsencrypt -d "{{ FS_MOUNTPOINT1 }}"
+  notify: Restart the Nginx service
+  tags: ssl

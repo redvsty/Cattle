@@ -1,0 +1,79 @@
+fastcgi_cache_path /tmp/{{ FS_MOUNTPOINT1 }} levels=1:2 keys_zone={{ FS_MOUNTPOINT1 }}:10m max_size=400m inactive=60m;
+
+server {
+       listen 80;
+       server_name "{{ FS_MOUNTPOINT1 }}";
+        
+#      location / {
+#      return 301 https://"{{ FS_MOUNTPOINT1 }}"$request_uri;
+#      }
+ 
+#      location ^~ /.well-known/acme-challenge/ {
+#      default_type "text/plain";
+#      root /var/www/letsencrypt;
+#      }
+        
+#  }
+        
+#      server {
+#      listen 443 ssl;
+#      server_name "{{ FS_MOUNTPOINT1 }}";
+ 
+#      ssl_certificate /etc/letsencrypt/live/"{{ FS_MOUNTPOINT1 }}"/fullchain.pem;
+#      ssl_certificate_key /etc/letsencrypt/live/"{{ FS_MOUNTPOINT1 }}"/privkey.pem;
+ 
+#      ssl_session_cache  builtin:1000  shared:SSL:10m;
+#      ssl_protocols  TLSv1 TLSv1.1 TLSv1.2;
+#      ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+#      ssl_prefer_server_ciphers on;
+ 
+        location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        root /var/www/letsencrypt;
+        }
+        
+        location ~ /\. {
+          allow 127.0.0.1;
+          deny all;
+        }
+
+        root /sites/apps/"{{ FS_MOUNTPOINT1 }}"/www/;
+        index index.php;
+        #access_log /var/log/trx/"{{ FS_MOUNTPOINT1 }}"-access_log;
+        error_log /var/log/trx/"{{ FS_MOUNTPOINT1 }}"-error_log;
+        
+        client_body_in_file_only clean;
+        client_body_in_single_buffer on;
+        #client_body_temp_path /tmp/"{{ FS_MOUNTPOINT1 }}"/ 1 2;                      
+
+       location / {
+       try_files \$uri \$uri/ /index.php?\$args;
+       gzip on;
+       gzip_disable \"msie6\";
+       gzip_static on;
+
+       gzip_vary on;
+       gzip_proxied any;
+       gzip_comp_level 5;
+       gzip_buffers 16 8k;
+       gzip_http_version 1.1;
+       gzip_types text/plain text/css text/javascript text/xml font/woff font/woff2 image/jpeg image/png image/gif application/x-font-woff application/json application/javascript application/x-javascript application/xml application/rss+xml application/atom+xml application/rdf+xml application/octet-stream;
+       keepalive_requests 100000;
+}
+                
+location ~ \.php$ {
+                try_files \$uri /index.php =404;
+                fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                #fastcgi_cache {{ FS_MOUNTPOINT1 }};
+                #fastcgi_cache_key \$scheme\$host\$request_uri\$request_method;
+                #fastcgi_cache_valid 200 301 302 5s;
+                #fastcgi_cache_use_stale updating error timeout invalid_header http_500;
+                #fastcgi_pass_header Set-Cookie;
+                #fastcgi_pass_header Cookie;
+                #fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
+                fastcgi_pass unix:/var/run/fpm/server.sock;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+                include fastcgi_params;
+                }
+}
