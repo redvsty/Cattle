@@ -281,9 +281,3 @@
     chmod 0755 /opt/package/letsencrypt/certbot-auto
     mkdir -p /var/www/letsencrypt/.well-known/acme-challenge/
   tags: ssl
-
-- name: Create SSL
-  shell: |
-    yes | /opt/package/letsencrypt/certbot-auto certonly --renew-by-default --webroot --agree-tos --no-eff-email --email support@trinix.id -w /var/www/letsencrypt -d "{{ FS_MOUNTPOINT1 }}"
-  notify: Restart the Nginx service
-  tags: ssl
