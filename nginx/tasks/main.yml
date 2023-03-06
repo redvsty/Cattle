@@ -1,0 +1,127 @@
+---
+# tasks file for nginx
+- name: check deployer user
+  action: user name=deployer state=present
+
+- name: Install required packages
+  yum:
+    name: "{{ install_packages }}"
+    state: present
+  tags:
+    - install_packages
+
+- name: Create opt package
+  file: path=/opt/package state=directory mode=0775
+  tags: nginx
+
+- name: Download nginx source code
+  ansible.builtin.get_url:
+    url: "http://nginx.org/download/nginx-{{ nginx_version }}.tar.gz"
+    dest: /opt/package/nginx-{{ nginx_version }}.tar.gz
+    mode: '0644'
+
+- name: Extract nginx source code
+  ansible.builtin.unarchive:
+    src: "/opt/package/nginx-{{ nginx_version }}.tar.gz"
+    dest: /usr/local
+    remote_src: true
+    owner: root
+    group: root
+
+- name: Rename nginx
+  become: true
+  shell: |
+    mv /usr/local/nginx-{{nginx_version}} /usr/local/nginx
+
+- name: Configure nginx
+  command: |
+    ./configure --prefix=/usr/local/nginx --conf-path=/usr/local/nginx/nginx.conf --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-http_auth_request_module --with-mail --with-mail_ssl_module --with-file-aio
+  args:
+    chdir: "/usr/local/nginx"
+  become: true
+
+- name: Build nginx
+  make:
+    chdir: "/usr/local/nginx"
+
+- name: Make install
+  make:
+    chdir: "/usr/local/nginx"
+    params:
+      prefix: "/usr/local/nginx"
+    target: install
+
+- name: Create Folder trx
+  file:
+    path: /var/log/trx/
+    state: directory
+    mode: 0755
+  tags: nginx
+
+- name: create file nginx-error.log
+  file:
+    path: /var/log/trx/nginx-error.log
+    state: touch
+    mode: 0755
+  tags: nginx
+
+- name: ensure file exists
+  copy:
+    content: ""
+    dest: /usr/local/nginx/conf/retno.conf
+    owner: root
+    mode: 0775
+  tags: nginx
+
+- name: Create retno.conf
+  template:
+    src: templates/retno.conf.j2
+    dest: /usr/local/nginx/conf/retno.conf
+  tags: nginx
+
+- name: Nginx.conf
+  template:
+    src: templates/nginx.conf.j2
+    dest: /usr/local/nginx/conf/nginx.conf
+  tags: nginx
+
+- name: Delete EOF
+  lineinfile: dest=/usr/local/nginx/conf/nginx.conf
+     state=absent 
+     regexp='EOF'
+  tags: nginx
+
+- name: Create conf.d Dir
+  file: path=/usr/local/nginx/conf.d state=directory mode=0775
+  tags: nginx
+
+- name: Create a symbolic link
+  ansible.builtin.file:
+    src: /usr/local/nginx/sbin/nginx
+    dest: /usr/bin/nginx
+    owner: root
+    group: root
+    state: link
+
+- name: create ssl directory
+  file:
+    path: /usr/local/nginx/ssl
+    state: directory
+    mode: 0755
+
+- name: insert nginx service in systemd
+  template:
+    src: templates/nginx.service.j2
+    dest: /etc/systemd/system/nginx.service  
+
+- name: Create Conf.d directory
+  file:
+    path: /usr/local/nginx/conf.d
+    state: directory
+  tags: nginx
+
+- name: Start nginx
+  service:
+    daemon-reload: true
+    name: nginx
+    state: started

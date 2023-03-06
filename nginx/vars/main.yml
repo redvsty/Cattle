@@ -1,0 +1,37 @@
+---
+# vars file for nginx
+install_packages:
+          - make
+          - wget
+          - epel-release
+          - gcc
+          - gcc-c++
+          - pcre-devel
+          - expat-devel
+          - libxml2-devel
+          - libcurl-devel
+          - libvpx-devel
+          - libjpeg-devel
+          - libpng-devel
+          - libXpm-devel
+          - freetype-devel
+          - libmcrypt
+          - libmcrypt-devel
+          - bzip2-devel
+          - gmp-devel
+          - readline-devel
+          - libxslt-devel
+          - libzip.x86_64
+          - libzip-devel.x86_64
+          - openssl-devel
+          - libicu.x86_64
+          - libicu-devel.x86_64
+          - screen
+          - libtool-ltdl-devel
+          - autoconf
+          - bison
+          - bison-devel
+          - re2c
+          - libsqlite3x-devel.x86_64
+          - oniguruma-devel.x86_64
+          - oniguruma-devel
