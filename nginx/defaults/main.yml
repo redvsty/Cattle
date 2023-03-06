@@ -1,0 +1,4 @@
+---
+# defaults file for nginx
+USER: deployer
+nginx_version: "1.22.1"
