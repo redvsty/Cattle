@@ -1,5 +1,208 @@
 ---
 # tasks file for init
+<<<<<<< HEAD
+# - name: Check if EPEL repo is already configured.
+#   stat: path={{ epel_repofile_path }}
+#   register: epel_repofile_result
+#   tags: init
+ 
+# - name: Install EPEL repo.
+#   yum:
+#     name: "{{ epel_repo_url }}"
+#     state: present
+#   register: result
+#   when: not epel_repofile_result.stat.exists
+#   tags: init
+ 
+# - name: Import EPEL GPG key.
+#   rpm_key:
+#     key: "{{ epel_repo_gpg_key_url }}"
+#     state: present
+#   when: not epel_repofile_result.stat.exists
+#   tags: init
+
+# - name: Install additional packages
+#   yum:
+#     name: "{{ additional_packages }}"
+#     state: present
+#   tags: 
+#   - init
+#   - node_exporter
+#   - promtail
+
+# - name: Create /opt/package directory
+#   file:
+#     path: /opt/package
+#     state: directory
+#     mode: 0755
+#   tags: init
+
+# - name: Create /opt/script directory
+#   file:
+#     path: /opt/script
+#     state: directory
+#     mode: 0755
+#   tags: init
+
+# - name: Changing perm of "/etc/rc.d/rc.local"
+#   file: dest=/etc/rc.d/rc.local mode=a+x
+#   tags: init
+
+# - name: enable rc.local service
+#   systemd:
+#     name: rc-local
+#     enabled: yes
+#   tags: init
+
+# - name: start rc.local service
+#   systemd:
+#     name: rc-local
+#     state: started
+#   tags: init
+
+# - name: Clone a Letsencrypt repo
+#   git:
+#     repo: https://github.com/letsencrypt/letsencrypt
+#     dest: /opt/package/letsencrypt
+#     clone: yes
+#     update: yes
+#   tags: init
+
+# - name: Download certbot-auto
+#   ansible.builtin.get_url:
+#     url: https://raw.githubusercontent.com/certbot/certbot/7f0fa18c570942238a7de73ed99945c3710408b4/letsencrypt-auto-source/letsencrypt-auto
+#     dest: /opt/package/letsencrypt/certbot-auto
+#     mode: a+x
+#   tags: init
+
+# - name: Create /var/www/letsencrypt/.well-known/acme-challenge/
+#   file:
+#     path: /var/www/letsencrypt/.well-known/acme-challenge/
+#     state: directory
+#     mode: 0755
+#   tags: init
+
+# - name: Create deployer user
+#   user:
+#     name: deployer
+#     state: present
+#     createhome: yes
+#     password: "$6$sGqZHguwkG2fA4c5$yi2eVP79jpMg7by.vDg/ZqiTiP00E58Y3Bb7nah5.H5djJWN8hMNzimOM5Ag/pHWgTC2j08cnC1FNIGRv2Mad1"
+#   tags: init
+
+# - name: Create trinixvas user
+#   user:
+#     name: trinixvas
+#     state: present
+#     createhome: yes
+#     password: "$6$On6lLgevMlRb7cui$HLotblXCpmI59kcuzTOxvaInbg8lscN8Y6eaEDg3hYV.cNHydm6Sva8R3Rc7grCrhxy/UqYf0DcTxa8jsYaGL/"
+#   tags: init
+
+# - name: Create user OS
+#   user:
+#     name: "{{ item }}"
+#     state: present
+#     createhome: yes
+#     password: "$6$sGqZHguwkG2fA4c5$yi2eVP79jpMg7by.vDg/ZqiTiP00E58Y3Bb7nah5.H5djJWN8hMNzimOM5Ag/pHWgTC2j08cnC1FNIGRv2Mad1"
+#   with_items:
+#     "{{ USER_OS }}"
+#   tags: init
+           
+# - name: Create trinix sudoers file
+#   file:
+#     path: "/etc/sudoers.d/trinix"
+#     state: touch
+#   tags: init
+      
+# - name: Add trinix user to sudoers
+#   lineinfile:
+#      path: /etc/sudoers.d/trinix
+#      line: '{{ item }}      ALL=(ALL)  ALL'
+#      state: present
+#   with_items: '{{ USER_OS }}'
+#   tags: init
+  
+# - name: Create log directory
+#   file:
+#     path: /var/log/trx
+#     state: directory
+#     recurse: yes
+#   tags: init
+      
+# - name: Disable selinux
+#   lineinfile:
+#      dest: /etc/selinux/config
+#      regexp: "SELINUX="
+#      line: "SELINUX=disabled"
+#   tags: init
+
+# - name: Disable iptables and firewalld
+#   service:
+#     name: firewalld
+#     state: stopped
+#     enabled: False
+#   tags: init
+
+# - name: Reset iptables to blank slate
+#   command: "{{ item }}"
+#   with_items:
+#     - 'iptables -F'
+#     - 'iptables-save'
+#   tags: init     
+     
+# - name: Change Hostname
+#   lineinfile:
+#      dest: /etc/sysconfig/network
+#      regexp: "HOSTNAME="
+#      line: "HOSTNAME={{ inventory_hostname|lower }}"
+#   tags: init
+
+# - name: Set hostname
+#   hostname:
+#     name: "{{ inventory_hostname | lower }}"
+#   tags: init
+
+# - name: Create .ssh directory
+#   file:
+#     path: /home/deployer/.ssh
+#     state: directory
+#     owner: deployer
+#     group: deployer
+#     mode: 0700
+#   tags: init
+
+# - name: Create authorized_keys
+#   file:
+#     path: /home/deployer/.ssh/authorized_keys
+#     state: touch
+#     owner: deployer
+#     group: deployer
+#     mode: 0600
+#   tags: init
+       
+# - name: Add jenkins SSH public key to deployer user
+#   template:
+#     src: templates/pub-key.j2
+#     dest: /home/deployer/.ssh/authorized_keys
+#   tags: init
+  
+# - name: Tunning security limits
+#   template:
+#     src: templates/limit.conf.j2
+#     dest: /etc/security/limits.conf
+#   tags: init
+  
+# - name: Tunning sysctl
+#   template:
+#     src: templates/sysctl.conf.j2
+#     dest: /etc/sysctl.conf
+#   tags: init
+
+- name: Load sysctl configuration and apply it
+  become: true
+  shell: |
+    sysctl -p
+=======
 - name: Check if EPEL repo is already configured.
   stat: path={{ epel_repofile_path }}
   register: epel_repofile_result
@@ -207,6 +410,7 @@
     name: /etc/sysctl.conf
     state: present
   tags: init
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   
 - name: Set timezone to Asia/Jakarta
   timezone:
@@ -232,6 +436,116 @@
     one_fact: "{{ ip }}"
   tags: node_exporter
 
+<<<<<<< HEAD
+# - name: Add retno host
+#   ansible.builtin.add_host:
+#     hostname: 't4x-retno'
+#     ansible_host: '35.247.180.182'
+#     ansible_port: '65432'
+    
+# - name: Add netra host
+#   ansible.builtin.add_host:
+#     hostname: 't4x-netra'
+#     ansible_host: '34.126.123.165'
+#     ansible_port: '65432'
+
+# - name: Clone or pull the repository
+#   git:
+#     repo: https://ajjaiii:uRSFVNVrguuQNuvbz9rd@bitbucket.org/rhesamahendra/trinix-common.git
+#     dest: /home/umar/trinix-common
+#     update: yes
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Make curl request with custom header
+#   uri:
+#     url: https://banjar.trinix.id/v1/kv/dotenv/trinix/add-trxcon.sh?raw=true
+#     method: GET
+#     headers:
+#       Custom-Header: "X-Consul-Token:22237b9d-a671-c89c-3989-536045ae3841"
+#     register: curl_result
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Save response to file
+#   copy:
+#     content: "{{ curl_result.content }}"
+#     dest: /home/umar/add-trxcon.sh
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Edit ID Customer
+#   ansible.builtin.lineinfile:
+#     path: /home/umar/add-trxcon.sh
+#     regexp: '^ID_CUSTOMER="BANJAR1"'
+#     replace: ID_CUSTOMER="{{ idcust }}"
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Edit Hostname server
+#   ansible.builtin.lineinfile:
+#     path: /home/umar/add-trxcon.sh
+#     regexp: '^HOSTNAME_SERVER="BANJAR2"'
+#     replace: HOSTNAME_SERVER="{{ inventory_hostname }}"
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Edit IP server
+#   ansible.builtin.lineinfile:
+#     path: /home/umar/add-trxcon.sh
+#     regexp: '^IP_SERVER="BANJAR3"'
+#     replace: IP_SERVER="{{ ansible_host }}"
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Edit Nama PT
+#   ansible.builtin.lineinfile:
+#     path: /home/umar/add-trxcon.sh
+#     regexp: '^NAMA_PT="BANJAR4"'
+#     replace: NAMA_PT="{{ namapt }}"
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Changing perm of "/home/umar/add-trxcon.sh"
+#   file: dest=/home/umar/add-trxcon.sh mode=a+x
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: Execute the trxcon
+#   command: sh /home/umar/add-trxcon.sh
+#   delegate_to: t4x-retno
+#   tags: trxcon
+
+# - name: git push
+#   shell: |
+#     cd /home/umar/trinix-common
+#     git add trxcon
+#     git commit -am "add host {{ inventory_hostname }}"
+#     git push
+#   delegate_to: t4x-retno
+#   tags: trxcon
+      
+# - name: Add config to prometheus.yml on retno server
+#   shell: |
+#      grep -r "job_name: {{ FS_MOUNTPOINT3 }}" /etc/prometheus/prometheus.yml
+#      status1=$?
+#      grep -r "hostname: {{ inventory_hostname }}" /etc/prometheus/prometheus.yml
+#      status2=$?
+#      if [[ $status1 -eq 0 ]] && [[ $status2 -eq 0 ]]; then
+#        echo "exit0"
+#        exit 0
+#      elif [[ $status1 -eq 0 ]] && [[ $status2 -eq 1 ]]; then
+#        echo "append config"
+#        sed -i '/#end-{{ FS_MOUNTPOINT3 }}/i \    \- targets: [{{ ip.stdout }}:9100]\n      labels:\n        hostname: {{ inventory_hostname }}' /etc/prometheus/prometheus.yml
+#        systemctl restart prometheus.service
+#      else
+#        echo "create new job"
+#        sed -i '$a\\n#start-{{ FS_MOUNTPOINT3 }}\n\  \- job_name: {{ FS_MOUNTPOINT3 }}\n    honor_labels: true\n    static_configs:\n    - targets: [{{ ip.stdout }}:9100]\n      labels:\n         hostname: {{ inventory_hostname }}\n#end-{{ FS_MOUNTPOINT3 }}\n' /etc/prometheus/prometheus.yml
+#        systemctl restart prometheus.service
+#      fi
+#   delegate_to: t4x-retno
+#   tags: node_exporter
+=======
 - name: Add retno host
   ansible.builtin.add_host:
     hostname: 't4x-retno'
@@ -340,6 +654,7 @@
      fi
   delegate_to: t4x-retno
   tags: node_exporter
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
            
 - name: Get node_exporter latest
   uri:
@@ -424,34 +739,62 @@
 # **------------- GW UDAH SAMPE SINI --------------** #
             
 - name: get dashboard alert json
+<<<<<<< HEAD
+  shell: "basename /var/www/html/alert*"
+  register: alert
+=======
   find:
     paths: /var/www/html/
     patterns: "alert*"
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: get dashboard monas json
+<<<<<<< HEAD
+  shell: "basename /var/www/html/monas*"
+  register: monas
+=======
   find:
     paths: /var/www/html/
     patterns: "monas*"
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: get dashboard nginx json
+<<<<<<< HEAD
+  shell: "basename /var/www/html/nginx*"
+  register: nginx
+=======
   find:
     paths: /var/www/html/nginx*
     patterns: nginx*
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: get dashboard serverdetails json
+<<<<<<< HEAD
+  shell: "basename /var/www/html/server*"
+  register: serverdetails
+=======
   find: 
     paths: /var/www/html/
     patterns: serverdetails*
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: Create retno organization for new customers
+<<<<<<< HEAD
+  shell: |
+     curl -s -u 'admin:{{ trinixgrafana }}' -XPOST -H "Content-Type: application/json" https://retno.trinix.id/api/orgs -d '{"name":"{{ orgname }}"}' | cut -d ":" -f 3 | cut -d \} -f1
+  tags: node_exporter
+            
+- name: Get id orgs retno
+  shell: |
+=======
   community.grafana.grafana_oraganization:
     name: "{{ orgname }}"
     url: https://retno.trinix.id
@@ -462,6 +805,7 @@
             
 - name: Get id orgs retno
   get_url: |
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
      curl -s -u 'admin:{{ trinixgrafana }}' https://retno.trinix.id/api/orgs/name/"{{ orgname }}" | jq '.id'            
   register: orgs
   tags: 
@@ -469,6 +813,19 @@
   - promtail
      
 - name: Get all dashboards uid from retno trinix-internal organization
+<<<<<<< HEAD
+  shell: |
+     curl --silent -XGET -H "Authorization: Bearer eyJrIjoidTAwMGR6TVJ4MHF6R2hQUDJiZkJheUdJZWNlZWd2blEiLCJuIjoiaW50ZXJuYWwiLCJpZCI6MTV9" https://retno.trinix.id/api/search | jq '.' | grep uid | cut -d "\"" -f4
+  register: uid
+  tags: node_exporter
+   
+- name: Get all dashboards uri from retno trinix-internal organization
+  shell: |
+    curl --silent -XGET -H "Authorization: Bearer eyJrIjoidTAwMGR6TVJ4MHF6R2hQUDJiZkJheUdJZWNlZWd2blEiLCJuIjoiaW50ZXJuYWwiLCJpZCI6MTV9" https://retno.trinix.id/api/search | jq '.' | grep db | grep -v type | cut -d "/" -f2 | cut -d "\"" -f1
+  register: uri
+  tags: node_exporter
+  
+=======
   uri:
     url: https://retno.trinix.id/api/search
     method: GET
@@ -483,6 +840,7 @@
     uids: "{{ result.content | from_json | json_query('dashboard.uid') }}"
   tags: node_exporter
 
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
 - name: remove existing dashboard on docker /var/www/html/*
   shell: | 
      rm -rf /var/www/html/*
@@ -497,8 +855,15 @@
     uid: "{{ item.0 }}"
     overwrite: yes
     state: export
+<<<<<<< HEAD
+    path: "/var/www/html/{{ item.1 }}.json"
+  with_together: 
+     - "{{ uid.stdout_lines }}"
+     - "{{ uri.stdout_lines }}"
+=======
     path: "/var/www/html/{{ item.0 }}.json"
   with_items: "{{ uid.stdout_lines }}"
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   delegate_to: 127.0.0.1
   tags: node_exporter
     
@@ -559,6 +924,22 @@
   delegate_to: 127.0.0.1
   tags: node_exporter
   
+<<<<<<< HEAD
+- name: remove existing regex pattern from dashboard /var/www/html/*
+  shell: |
+     jq . /var/www/html/{{ item }} | sed -e '/"regex"/d' /var/www/html/{{ item }}
+  with_items:
+    - "{{ alert.stdout }}"
+    - "{{ monas.stdout }}"
+    - "{{ serverdetails.stdout}}"
+    - "{{ nginx.stdout }}"
+  delegate_to: 127.0.0.1
+  tags: node_exporter
+  
+- name: add regex to dashboard "{{ FS_MOUNTPOINT3 }}"
+  shell: |
+      sed -i 's/"regex":\ "\/\^trx-\*\/"/"regex":\ "\/\^{{ orgname }}-\*\/"/' /var/www/html/{{ item }}
+=======
 - name: Remove regex pattern from dashboard /var/www/html/*
   shell: | 
     for file in /var/www/html/alert.json /var/www/html/monas.json /var/www/html/serverdetails.json /var/www/html/nginx.json; do
@@ -571,6 +952,7 @@
 - name: add regex to dashboard "{{ FS_MOUNTPOINT3 }}"
   shell: |
       sed -i 's/"regex":\ "\/^trx-*/"/"regex":\ "\/^{{ orgname }}-*/"/' /var/www/html/{{ item }}
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   with_items:
     - "{{ alert.stdout }}"
     - "{{ monas.stdout }}"
@@ -591,9 +973,13 @@
     path: "/var/www/html/{{ alert.stdout }}"
   with_items: "{{ orgs.stdout_lines }}"
   delegate_to: 127.0.0.1
+<<<<<<< HEAD
+  tags: node_exporter
+=======
   tags:
     - node_exporter
 
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
   
 - name: Import grafana dashboard MONAS from /var/www/html/"{{ monas.stdout }}"
   community.grafana.grafana_dashboard:
@@ -648,6 +1034,110 @@
      state: started
   tags: node_exporter
   
+<<<<<<< HEAD
+- name: get promtail latest 
+  shell: |
+      curl -s https://github.com/grafana/loki/releases/latest -i |grep Location |head -1 | cut -d "/" -f 8
+  register: promtaillatest
+  tags: 
+  - init
+  - promtail
+  
+- name: Install promtail '{{ promtaillatest.stdout }}' to /usr/bin/promtail
+  shell: |
+     yum -y install unzip
+     [ ! -d /etc/promtail ] && mkdir /etc/promtail
+     [ ! -f /etc/promtail/promtail.yml ] && touch /etc/promtail/promtail.yml
+     cd /opt/package
+     curl -s -O -L https://github.com/grafana/loki/releases/download/{{ promtaillatest.stdout }}/promtail-linux-amd64.zip
+     unzip -o promtail-linux-amd64.zip
+     cp promtail-linux-amd64 /usr/bin/promtail
+     mkdir /etc/promtail
+     touch /etc/promtail/promtail.yml
+  tags: 
+  - init
+  - promtail
+          
+- name: Create promtail config yml
+  shell: |
+     cat <<EOF | sudo tee /etc/promtail/promtail.yml
+     server:
+       http_listen_port: 5555
+       grpc_listen_port: 0
+     
+     positions:
+       filename: /tmp/positions.yaml
+     
+     clients:
+       - url: http://log.trinix.id/loki/api/v1/push
+         basic_auth:
+             username: admin
+             password: Trinix%55
+         tenant_id: 5000
+
+      scrape_configs:
+        - job_name: docker
+          docker_sd_configs:
+            - host: unix:///var/run/docker.sock
+              refresh_interval: 5s
+            relabel_configs:
+              - source_labels: ['__meta_docker_container_name']
+                regex: '/(.*)'
+                target_label: 'container'
+          - job_name: system
+            static_configs:
+            - targets:
+                - localhost
+              labels:
+                __path__: /sites/apps/domainname.com/www/storage/logs/laravel.log
+                app: "apps-name"
+                       
+               EOF
+            tags: 
+            - init
+            - promtail
+            
+- name: Change tenant_id promtail.yml
+  lineinfile:
+     dest: /etc/promtail/promtail.yml
+     regexp: "tenant_id:"
+     line: "    tenant_id: {{ orgs.stdout }}"
+  tags:
+  - init
+  - promtail
+         
+- name: Create systemd promtail
+  shell: |
+     cat <<EOF | sudo tee /etc/systemd/system/promtail.service
+     [Unit]
+     Description=Promtail service
+     After=network.target
+     
+     [Service]
+     Type=simple
+     User=root
+     ExecStart=/usr/bin/promtail -config.file /etc/promtail/promtail.yml --client.external-labels=hostname={{ inventory_hostname }}
+     
+     [Install]
+     WantedBy=multi-user.target
+     EOF
+     
+     systemctl daemon-reload
+     systemctl start promtail.service
+     systemctl enable promtail.service
+  tags:
+  - init
+  - promtail
+  
+- name: Add gmond config on netra server /etc/rc.d/init.d/functions before pattern
+  shell: |
+     grep -r "gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf" /etc/rc.d/init.d/functions
+     statusgmond=$?
+     if [ $statusgmond -ne 0 ]; then
+       sed -i '/#end-gmond/i gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf' /etc/rc.d/init.d/functions
+     else
+       exit 0
+=======
 - name: Get latest promtail version
   uri:
     url: https://github.com/grafana/loki/releases/latest
@@ -774,6 +1264,7 @@
        exit 0
      else
        sed -i "\|#end-gmond| i gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf" /etc/rc.d/init.d/functions
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
      fi
   delegate_to: t4x-netra
   tags: ganglia
@@ -844,6 +1335,23 @@
   tags: ganglia
   delegate_to: t4x-netra
             
+<<<<<<< HEAD
+- name: Install ganglia-gmond
+  yum:
+    name:
+      - ganglia-gmond
+    state: present
+  tags: 
+  - ganglia
+  - ganglia-client
+   
+- name: Create gmond.conf
+  shell: |
+   gmond -t > /etc/ganglia/gmond.conf
+  tags: 
+  - ganglia
+  - ganglia-client
+=======
 - name: Install Ganglia gmond
   yum:
     name: ganglia-gmond
@@ -858,6 +1366,7 @@
   tags:
     - ganglia
     - ganglia-client
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
          
 - name: Change gmond config on client side
   shell: |
@@ -889,6 +1398,12 @@
   - ganglia
   - ganglia-client
         
+<<<<<<< HEAD
+- name: get IP public of server
+  shell: curl ipinfo.io/ip
+  register: ip
+  tags: nagios
+=======
 - name: Get public IP address of server
   uri:
     url: https://ipinfo.io/ip
@@ -896,6 +1411,7 @@
   register: ip_address
   tags:
     - nagios
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
          
 - name: Add Nagios config /etc/nagios/customers and /etc/nagios/servicegroups
   shell: |
@@ -1045,6 +1561,10 @@
 - name: Automatic mount swap after reboot
   shell: |
      grep -q "trinixswap" /etc/fstab ; [ $? -eq 1 ] && echo "/trinixswap none swap sw 0 0"  >> /etc/fstab
+<<<<<<< HEAD
+  tags: swap
+=======
   tags: swap
 
   #TAMAT COOOOO
+>>>>>>> 9c43930780abeaa9095108fe17276ca7a144c39b
