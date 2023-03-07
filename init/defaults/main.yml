@@ -11,6 +11,6 @@ additional_packages:
   - net-tools
   - psmisc
   - unzip
-  - libzip2
+  - libzip-devel
   - jq
   - screen
