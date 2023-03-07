@@ -424,36 +424,44 @@
 # **------------- GW UDAH SAMPE SINI --------------** #
             
 - name: get dashboard alert json
-  shell: "basename /var/www/html/alert*"
-  register: alert
+  find:
+    paths: /var/www/html/
+    patterns: "alert*"
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: get dashboard monas json
-  shell: "basename /var/www/html/monas*"
-  register: monas
+  find:
+    paths: /var/www/html/
+    patterns: "monas*"
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: get dashboard nginx json
-  shell: "basename /var/www/html/nginx*"
-  register: nginx
+  find:
+    paths: /var/www/html/nginx*
+    patterns: nginx*
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: get dashboard serverdetails json
-  shell: "basename /var/www/html/server*"
-  register: serverdetails
+  find: 
+    paths: /var/www/html/
+    patterns: serverdetails*
   delegate_to: 127.0.0.1
   tags: node_exporter
   
 - name: Create retno organization for new customers
-  shell: |
-     curl -s -u 'admin:{{ trinixgrafana }}' -XPOST -H "Content-Type: application/json" https://retno.trinix.id/api/orgs -d '{"name":"{{ orgname }}"}' | cut -d ":" -f 3 | cut -d \} -f1
+  community.grafana.grafana_oraganization:
+    name: "{{ orgname }}"
+    url: https://retno.trinix.id
+    username: admin
+    password: "{{ trinixgrafana }}"
+    state: present
   tags: node_exporter
             
 - name: Get id orgs retno
-  shell: |
+  get_url: |
      curl -s -u 'admin:{{ trinixgrafana }}' https://retno.trinix.id/api/orgs/name/"{{ orgname }}" | jq '.id'            
   register: orgs
   tags: 
@@ -461,17 +469,20 @@
   - promtail
      
 - name: Get all dashboards uid from retno trinix-internal organization
-  shell: |
-     curl --silent -XGET -H "Authorization: Bearer eyJrIjoidTAwMGR6TVJ4MHF6R2hQUDJiZkJheUdJZWNlZWd2blEiLCJuIjoiaW50ZXJuYWwiLCJpZCI6MTV9" https://retno.trinix.id/api/search | jq '.' | grep uid | cut -d "\"" -f4
-  register: uid
+  uri:
+    url: https://retno.trinix.id/api/search
+    method: GET
+    headers:
+      Authorization: "Bearer eyJrIjoidTAwMGR6TVJ4MHF6R2hQUDJiZkJheUdJZWNlZWd2blEiLCJuIjoiaW50ZXJuYWwiLCJpZCI6MTV9"
+      return_content: yes
+    register: result
   tags: node_exporter
    
-- name: Get all dashboards uri from retno trinix-internal organization
-  shell: |
-    curl --silent -XGET -H "Authorization: Bearer eyJrIjoidTAwMGR6TVJ4MHF6R2hQUDJiZkJheUdJZWNlZWd2blEiLCJuIjoiaW50ZXJuYWwiLCJpZCI6MTV9" https://retno.trinix.id/api/search | jq '.' | grep db | grep -v type | cut -d "/" -f2 | cut -d "\"" -f1
-  register: uri
+- name: Extract uids from result
+  set_fact:
+    uids: "{{ result.content | from_json | json_query('dashboard.uid') }}"
   tags: node_exporter
-  
+
 - name: remove existing dashboard on docker /var/www/html/*
   shell: | 
      rm -rf /var/www/html/*
@@ -486,10 +497,8 @@
     uid: "{{ item.0 }}"
     overwrite: yes
     state: export
-    path: "/var/www/html/{{ item.1 }}.json"
-  with_together: 
-     - "{{ uid.stdout_lines }}"
-     - "{{ uri.stdout_lines }}"
+    path: "/var/www/html/{{ item.0 }}.json"
+  with_items: "{{ uid.stdout_lines }}"
   delegate_to: 127.0.0.1
   tags: node_exporter
     
@@ -550,20 +559,18 @@
   delegate_to: 127.0.0.1
   tags: node_exporter
   
-- name: remove existing regex pattern from dashboard /var/www/html/*
-  shell: |
-     jq . /var/www/html/{{ item }} | sed -e '/"regex"/d' /var/www/html/{{ item }}
-  with_items:
-    - "{{ alert.stdout }}"
-    - "{{ monas.stdout }}"
-    - "{{ serverdetails.stdout}}"
-    - "{{ nginx.stdout }}"
+- name: Remove regex pattern from dashboard /var/www/html/*
+  shell: | 
+    for file in /var/www/html/alert.json /var/www/html/monas.json /var/www/html/serverdetails.json /var/www/html/nginx.json; do
+      grep -v '"regex"' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+    done
   delegate_to: 127.0.0.1
-  tags: node_exporter
+  tags: 
+    - node_exporter
   
 - name: add regex to dashboard "{{ FS_MOUNTPOINT3 }}"
   shell: |
-      sed -i 's/"regex":\ "\/\^trx-\*\/"/"regex":\ "\/\^{{ orgname }}-\*\/"/' /var/www/html/{{ item }}
+      sed -i 's/"regex":\ "\/^trx-*/"/"regex":\ "\/^{{ orgname }}-*/"/' /var/www/html/{{ item }}
   with_items:
     - "{{ alert.stdout }}"
     - "{{ monas.stdout }}"
@@ -584,7 +591,9 @@
     path: "/var/www/html/{{ alert.stdout }}"
   with_items: "{{ orgs.stdout_lines }}"
   delegate_to: 127.0.0.1
-  tags: node_exporter
+  tags:
+    - node_exporter
+
   
 - name: Import grafana dashboard MONAS from /var/www/html/"{{ monas.stdout }}"
   community.grafana.grafana_dashboard:
@@ -639,108 +648,132 @@
      state: started
   tags: node_exporter
   
-- name: get promtail latest 
-  shell: |
-      curl -s https://github.com/grafana/loki/releases/latest -i |grep Location |head -1 | cut -d "/" -f 8
-  register: promtaillatest
+- name: Get latest promtail version
+  uri:
+    url: https://github.com/grafana/loki/releases/latest
+    method: GET
+    return_content: yes
+  register: promtail_latest
   tags: 
   - init
   - promtail
-  
-- name: Install promtail '{{ promtaillatest.stdout }}' to /usr/bin/promtail
-  shell: |
-     yum -y install unzip
-     [ ! -d /etc/promtail ] && mkdir /etc/promtail
-     [ ! -f /etc/promtail/promtail.yml ] && touch /etc/promtail/promtail.yml
-     cd /opt/package
-     curl -s -O -L https://github.com/grafana/loki/releases/download/{{ promtaillatest.stdout }}/promtail-linux-amd64.zip
-     unzip -o promtail-linux-amd64.zip
-     cp promtail-linux-amd64 /usr/bin/promtail
-     mkdir /etc/promtail
-     touch /etc/promtail/promtail.yml
-  tags: 
-  - init
-  - promtail
-          
+
+- name: Install promtail '{{ promtail_latest.json | regex_replace(".*tag/(.*)\".*", "\\1") }}' to /usr/bin/promtail
+  become: true
+  vars:
+    promtail_version: "{{ promtail_latest.json | regex_replace('.*tag/(.*)\".*', '\\1') }}"
+  block:
+    - name: Install required packages
+      yum:
+        name:
+          - unzip
+        state: latest
+
+    - name: Download promtail
+      get_url:
+        url: "https://github.com/grafana/loki/releases/download/v{{ promtail_version }}/promtail-linux-amd64.zip"
+        dest: "/tmp/promtail.zip"
+        mode: 0644
+      register: promtail_download
+
+    - name: Extract promtail
+      unarchive:
+        src: "/tmp/promtail.zip"
+        dest: "/tmp"
+        remote_src: true
+        extra_opts: [--strip-components=1]
+        creates: "/tmp/promtail-linux-amd64"
+
+    - name: Install promtail
+      copy:
+        src: "/tmp/promtail-linux-amd64"
+        dest: "/usr/bin/promtail"
+        mode: 0755
+      register: promtail_install
+
+  rescue:
+    - debug:
+        var: promtail_latest
+    - debug:
+        var: promtail_download
+    - debug:
+        var: promtail_install
+    - fail:
+        msg: "Unable to install promtail"
+  tags:
+    - init
+    - promtail
+      
 - name: Create promtail config yml
   shell: |
-     cat <<EOF | sudo tee /etc/promtail/promtail.yml
-     server:
-       http_listen_port: 5555
-       grpc_listen_port: 0
-     
-     positions:
-       filename: /tmp/positions.yaml
-     
-     clients:
-       - url: http://log.trinix.id/loki/api/v1/push
-         basic_auth:
-             username: admin
-             password: Trinix%55
-         tenant_id: 5000
+    cat <<EOF | sudo tee /etc/promtail/promtail.yml
+    server:
+      http_listen_port: 5555
+      grpc_listen_port: 0
 
-      scrape_configs:
-        - job_name: docker
-          docker_sd_configs:
-            - host: unix:///var/run/docker.sock
-              refresh_interval: 5s
-            relabel_configs:
-              - source_labels: ['__meta_docker_container_name']
-                regex: '/(.*)'
-                target_label: 'container'
-          - job_name: system
-            static_configs:
-            - targets:
-                - localhost
-              labels:
-                __path__: /sites/apps/domainname.com/www/storage/logs/laravel.log
-                app: "apps-name"
-                       
-               EOF
-            tags: 
-            - init
-            - promtail
-            
-- name: Change tenant_id promtail.yml
-  lineinfile:
-     dest: /etc/promtail/promtail.yml
-     regexp: "tenant_id:"
-     line: "    tenant_id: {{ orgs.stdout }}"
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://log.trinix.id/loki/api/v1/push
+        basic_auth:
+          username: admin
+          password: Trinix%55
+        tenant_id: 5000
+
+    scrape_configs:
+      - job_name: docker
+        docker_sd_configs:
+          - host: unix:///var/run/docker.sock
+            refresh_interval: 5s
+        relabel_configs:
+          - source_labels: ['__meta_docker_container_name']
+            regex: '/(.*)'
+            target_label: 'container'
+      - job_name: system
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              __path__: /sites/apps/domainname.com/www/storage/logs/laravel.log
+              app: "apps-name"
+    EOF
   tags:
-  - init
-  - promtail
+    - init
+    - promtail
+
+- name: Change tenant_id promtail.yml
+  replace:
+    path: /etc/promtail/promtail.yml
+    regexp: 'tenant_id:.*'
+    replace: '    tenant_id: {{ orgs.stdout }}'
+  tags:
+    - init
+    - promtail
          
 - name: Create systemd promtail
-  shell: |
-     cat <<EOF | sudo tee /etc/systemd/system/promtail.service
-     [Unit]
-     Description=Promtail service
-     After=network.target
-     
-     [Service]
-     Type=simple
-     User=root
-     ExecStart=/usr/bin/promtail -config.file /etc/promtail/promtail.yml --client.external-labels=hostname={{ inventory_hostname }}
-     
-     [Install]
-     WantedBy=multi-user.target
-     EOF
-     
-     systemctl daemon-reload
-     systemctl start promtail.service
-     systemctl enable promtail.service
+  systemd:
+    name: promtail.service
+    enabled: yes
+    state: started
+    daemon_reload: yes
+    unit:
+      Description: Promtail service
+      After: network.target
+    service:
+      Type: simple
+      User: root
+      ExecStart: /usr/bin/promtail -config.file /etc/promtail/promtail.yml --client.external-labels=hostname={{ inventory_hostname }}
   tags:
-  - init
-  - promtail
+    - init
+    - promtail
   
 - name: Add gmond config on netra server /etc/rc.d/init.d/functions before pattern
   shell: |
-     grep -r "gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf" /etc/rc.d/init.d/functions
-     statusgmond=$?
-     if [ $statusgmond -ne 0 ]; then
-       sed -i '/#end-gmond/i gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf' /etc/rc.d/init.d/functions
-     else
+     if grep -q "gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf" /etc/rc.d/init.d/functions; then
        exit 0
+     else
+       sed -i "\|#end-gmond| i gmond -c /etc/ganglia/conf/{{ FS_MOUNTPOINT3 }}.conf" /etc/rc.d/init.d/functions
      fi
   delegate_to: t4x-netra
   tags: ganglia
@@ -811,21 +844,20 @@
   tags: ganglia
   delegate_to: t4x-netra
             
-- name: Install ganglia-gmond
+- name: Install Ganglia gmond
   yum:
-    name:
-      - ganglia-gmond
+    name: ganglia-gmond
     state: present
-  tags: 
-  - ganglia
-  - ganglia-client
+  tags:
+    - ganglia
+    - ganglia-client
    
-- name: Create gmond.conf
+- name: Buat konfigurasi gmond
   shell: |
-   gmond -t > /etc/ganglia/gmond.conf
-  tags: 
-  - ganglia
-  - ganglia-client
+    gmond -t > /etc/ganglia/gmond.conf
+  tags:
+    - ganglia
+    - ganglia-client
          
 - name: Change gmond config on client side
   shell: |
@@ -857,10 +889,13 @@
   - ganglia
   - ganglia-client
         
-- name: get IP public of server
-  shell: curl ipinfo.io/ip
-  register: ip
-  tags: nagios
+- name: Get public IP address of server
+  uri:
+    url: https://ipinfo.io/ip
+    return_content: yes
+  register: ip_address
+  tags:
+    - nagios
          
 - name: Add Nagios config /etc/nagios/customers and /etc/nagios/servicegroups
   shell: |
@@ -1011,3 +1046,5 @@
   shell: |
      grep -q "trinixswap" /etc/fstab ; [ $? -eq 1 ] && echo "/trinixswap none swap sw 0 0"  >> /etc/fstab
   tags: swap
+
+  #TAMAT COOOOO
