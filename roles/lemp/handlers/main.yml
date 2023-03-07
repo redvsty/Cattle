@@ -1,9 +1,0 @@
----
-# handlers file for LEMP
-- name: Restart the Nginx service
-  shell: |
-    /usr/local/nginx/sbin/nginx -s reload
-
-- name: Restart the PHP service
-  shell: |
-    /etc/init.d/php-fpm{{ FS_MOUNTPOINT2 }} restart
