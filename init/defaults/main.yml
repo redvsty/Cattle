@@ -1,0 +1,20 @@
+---
+# defaults file for init
+epel_repo_url: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+epel_repo_gpg_key_url: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
+epel_repofile_path: "/etc/yum.repos.d/epel.repo"
+additional_packages:
+  - wget
+  - git
+  - rsync
+  - mlocate
+  - net-tools
+  - psmisc
+  - unzip
+  - libzip-devel
+  - jq
+  - screen
+promtail_version_regex: '.*tag/(.*)\".*'
+promtail_version: "{{ promtail_latest.json | regex_replace(promtail_version_regex, '\\1') }}"
+promtail_latest:
+      json: promtail-2.3.0-linux-amd64.zip

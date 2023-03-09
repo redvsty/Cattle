@@ -1,0 +1,14 @@
+---
+# vars file for init
+USER_OS:
+    - ahmad
+    - rhesa
+    - asri
+    - aryadi
+    - trinix
+hostname: "{{ inventory_hostname }}"
+trinixgrafana: Trinix%55
+trinixprometheus: "{{ trinixprometheus }}"
+orgname: rvy
+namapt: Redvsty.my.id
+orgsstdout: 2020

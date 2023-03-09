@@ -1,0 +1,5 @@
+define servicegroup{
+          servicegroup_name       {{ inventory_hostname }}
+          alias                   {{ inventory_hostname }}
+          members                 {{ inventory_hostname }}, ssh, {{ inventory_hostname }}, ping
+          }

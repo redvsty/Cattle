@@ -1,0 +1,30 @@
+server:
+      http_listen_port: 5555
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://log.trinix.id/loki/api/v1/push
+        basic_auth:
+          username: admin
+          password: Trinix%55
+        tenant_id: 5000
+
+    scrape_configs:
+      - job_name: docker
+        docker_sd_configs:
+          - host: unix:///var/run/docker.sock
+            refresh_interval: 5s
+        relabel_configs:
+          - source_labels: ['__meta_docker_container_name']
+            regex: '/(.*)'
+            target_label: 'container'
+      - job_name: system
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              __path__: /sites/apps/domainname.com/www/storage/logs/laravel.log
+              app: "apps-name"
