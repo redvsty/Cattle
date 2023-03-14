@@ -4,15 +4,43 @@
   action: user name=deployer state=present
 
 - name: Install required packages
-  yum:
-    name: "{{ install_packages }}"
-    state: present
-  tags:
-    - install_packages
-
+  block:
+    - name: Install required packages (YUM)
+      yum:
+        name: "{{ install_packages }}"
+        state: present
+  rescue:
+    - name: Install required packages (APT)
+      apt:
+        name: "{{ install_packages }}"
+        state: present
+    
 - name: Create opt package
   file: path=/opt/package state=directory mode=0775
-  tags: nginx
+
+- name: Clone a Letsencrypt repository
+  git:
+    repo: https://github.com/letsencrypt/letsencrypt
+    dest: /opt/package/letsencrypt
+    clone: yes
+    update: yes
+
+- name: Download Letsencrypt
+  get_url:
+    url: https://raw.githubusercontent.com/certbot/certbot/7f0fa18c570942238a7de73ed99945c3710408b4/letsencrypt-auto-source/letsencrypt-auto
+    dest: /opt/package/letsencrypt/certbot-auto
+
+- name: Change permission of certbot-auto
+  ansible.builtin.file:
+    path: /opt/package/letsencrypt/certbot-auto
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create directory /var/www/letsencrypt/.well-known/acme-challenge/
+  file:
+    path: /var/www/letsencrypt/.well-known/acme-challenge/
+    state: director
 
 - name: Download nginx source code
   ansible.builtin.get_url:
@@ -56,14 +84,12 @@
     path: /var/log/trx/
     state: directory
     mode: 0755
-  tags: nginx
 
 - name: create file nginx-error.log
   file:
     path: /var/log/trx/nginx-error.log
     state: touch
     mode: 0755
-  tags: nginx
 
 - name: ensure file exists
   copy:
@@ -71,29 +97,24 @@
     dest: /usr/local/nginx/conf/retno.conf
     owner: root
     mode: 0775
-  tags: nginx
 
 - name: Create retno.conf
   template:
     src: templates/retno.conf.j2
     dest: /usr/local/nginx/conf/retno.conf
-  tags: nginx
 
 - name: Nginx.conf
   template:
     src: templates/nginx.conf.j2
     dest: /usr/local/nginx/conf/nginx.conf
-  tags: nginx
 
 - name: Delete EOF
   lineinfile: dest=/usr/local/nginx/conf/nginx.conf
      state=absent 
      regexp='EOF'
-  tags: nginx
 
 - name: Create conf.d Dir
   file: path=/usr/local/nginx/conf.d state=directory mode=0775
-  tags: nginx
 
 - name: Create a symbolic link
   ansible.builtin.file:
@@ -118,10 +139,12 @@
   file:
     path: /usr/local/nginx/conf.d
     state: directory
-  tags: nginx
+
+- name: Restart daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 - name: Start nginx
-  service:
-    daemon-reload: true
+  service: 
     name: nginx
     state: started

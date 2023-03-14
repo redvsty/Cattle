@@ -234,22 +234,39 @@
 - name: Add retno host
   ansible.builtin.add_host:
     hostname: 't4x-retno'
-    ansible_host: '34.130.7.117'
+    ansible_host: '35.230.169.90'
     ansible_port: '22'
+  tags:
+    - init
+    - node_exporter
+    - prometheus
+    - ganglia
+    - ganglia-client
+    - nagios
     
 - name: Add netra host
   ansible.builtin.add_host:
     hostname: 't4x-netra'
-    ansible_host: '34.130.7.117'
+    ansible_host: '35.230.169.90'
     ansible_port: '22'
+  tags:
+    - init
+    - node_exporter
+    - prometheus
+    - ganglia
+    - ganglia-client
+    - nagios
 
 - name: Clone or pull the repository
-  git:
-    repo: https://ajjaiii:uRSFVNVrguuQNuvbz9rd@bitbucket.org/rhesamahendra/trinix-common.git
-    dest: /home/umar/trinix-common
-    update: yes
-  delegate_to: t4x-retno
-  tags: trxcon
+  block:
+    - name: Clone repo
+      git:
+        repo: https://ajjaiii:uRSFVNVrguuQNuvbz9rd@bitbucket.org/rhesamahendra/trinix-common.git
+        dest: /home/umar/trinix-common
+        update: yes
+        force: yes
+      delegate_to: t4x-retno
+      tags: trxcon
 
 - name: Make curl request with custom header
   become: true
@@ -321,14 +338,16 @@
   delegate_to: t4x-retno
   tags: trxcon
 
-- name: git push
-  shell: |
-    cd /home/umar/trinix-common
-    git add trxcon
-    git commit -am "add host {{ inventory_hostname }}"
-    git push
-  delegate_to: t4x-retno
-  tags: trxcon
+#############------------------------HERE------------------------###################
+
+# - name: git push
+#   shell: |
+#     cd /home/umar/trinix-common
+#     git add trxcon
+#     git commit -am "add host {{ inventory_hostname }}"
+#     git push
+#   delegate_to: t4x-retno
+#   tags: trxcon
       
 - name: Add config to prometheus.yml on retno server
   shell: |
@@ -342,11 +361,11 @@
      elif [[ $status1 -eq 0 ]] && [[ $status2 -eq 1 ]]; then
        echo "append config"
        sed -i '/#end-{{ orgname }}/i \    \- targets: [{{ ip.stdout }}:9100]\n      labels:\n        hostname: {{ inventory_hostname }}' /etc/prometheus/prometheus.yml
-       systemctl restart prometheus.service
+       systemctl restart prometheus
      else
        echo "create new job"
        sed -i '$a\\n#start-{{ orgname }}\n\  \- job_name: {{ orgname }}\n    honor_labels: true\n    static_configs:\n    - targets: [{{ ip.stdout }}:9100]\n      labels:\n         hostname: {{ inventory_hostname }}\n#end-{{ orgname }}\n' /etc/prometheus/prometheus.yml
-       systemctl restart prometheus.service
+       systemctl restart prometheus
      fi
   delegate_to: t4x-retno
   tags: node_exporter
@@ -358,18 +377,9 @@
   tags: node_exporter
 
 - name: Delete old node-exporter from /opt/package
-  find:
-    paths: /opt/package/
-    patterns: 'node_exporter*'
-    recurse: no
-  register: files_to_delete
-
-- name: Remove files
   file:
-    path: "{{ item.path }}"
+    path: /opt/package/node_exporter*
     state: absent
-  loop: "{{ files_to_delete.files }}"
-  when: item.is_file
   tags: node_exporter
 
 - name: Stop node_exporter
@@ -667,7 +677,9 @@
 #   with_items: "{{ orgs.stdout_lines }}"
 #   delegate_to: 127.0.0.1
 #   tags: node_exporter
-  
+
+############--------------UNTIL HERE------------################
+
 - name: get IP public of server
   shell: curl ipinfo.io/ip
   register: ipku
@@ -725,15 +737,6 @@
     - init
     - promtail
 
-- name: Download and extract promtail binary
-  become: true
-  get_url:
-    url: "https://github.com/grafana/loki/releases/download/{{ promtail_latest.json.tag_name }}/promtail-linux-amd64.zip"
-    dest: "/tmp/promtail-linux-amd64.zip"
-  tags:
-    - init
-    - promtail
-
 - name: Extract promtail binary
   become: true
   unarchive:
@@ -756,7 +759,7 @@
   replace:
     path: /etc/promtail/promtail.yml
     regexp: 'tenant_id:.*'
-    replace: 'tenant_id: {{ orgs.stdout }}'
+    replace: 'tenant_id: {{ orgsstdout }}'
   tags:
     - init
     - promtail
@@ -910,25 +913,25 @@
     - ganglia-client
 
          
-- name: Change gmond config on client side
-  shell: |
-     sed -i '18s/  # override_hostname = "mywebserver.domain.com"/override_hostname = "{{ hostname|lower }}"/' /etc/ganglia/gmond.conf
-     sed -i '21s/send_metadata_interval = 0 \/\*secs \*\//send_metadata_interval = 30 \/\*secs \*\//'  /etc/ganglia/gmond.conf
-     sed -i '50s/mcast_join = 239.2.11.71/host = 34.126.123.165/'  /etc/ganglia/gmond.conf
-     sed -i '51s/port = 8649/port = {{ port.stdout }}/'  /etc/ganglia/gmond.conf
-     sed -i '56s/udp_recv_channel {/#udp_recv_channel {/'  /etc/ganglia/gmond.conf
-     sed -i '57s/mcast_join = 239.2.11.71/#mcast_join = 239.2.11.71/'  /etc/ganglia/gmond.conf
-     sed -i '58s/port = 8649/#port = 8649/'  /etc/ganglia/gmond.conf
-     sed -i '59s/bind = 239.2.11.71/#bind = 239.2.11.71/'  /etc/ganglia/gmond.conf
-     sed -i '60s/retry_bind = true/#retry_bind = true/'  /etc/ganglia/gmond.conf
-     sed -i '64s/}/#}/' /etc/ganglia/gmond.conf
-     sed -i '68s/tcp_accept_channel/#tcp_accept_channel/'  /etc/ganglia/gmond.conf
-     sed -i '69s/port = 8649/#port = 8649/'  /etc/ganglia/gmond.conf
-     sed -i '71s/gzip_output = no/#gzip_output = no/'  /etc/ganglia/gmond.conf
-     sed -i '72s/}/#}/'  /etc/ganglia/gmond.conf
-  tags: 
-  - ganglia
-  - ganglia-client
+# - name: Change gmond config on client side
+#   shell: |
+#      sed -i '18s/  # override_hostname = "mywebserver.domain.com"/override_hostname = "{{ hostname|lower }}"/' /etc/ganglia/gmond.conf
+#      sed -i '21s/send_metadata_interval = 0 \/\*secs \*\//send_metadata_interval = 30 \/\*secs \*\//'  /etc/ganglia/gmond.conf
+#      sed -i '50s/mcast_join = 239.2.11.71/host = 34.126.123.165/'  /etc/ganglia/gmond.conf
+#      sed -i '51s/port = 8649/port = {{ port.stdout }}/'  /etc/ganglia/gmond.conf
+#      sed -i '56s/udp_recv_channel {/#udp_recv_channel {/'  /etc/ganglia/gmond.conf
+#      sed -i '57s/mcast_join = 239.2.11.71/#mcast_join = 239.2.11.71/'  /etc/ganglia/gmond.conf
+#      sed -i '58s/port = 8649/#port = 8649/'  /etc/ganglia/gmond.conf
+#      sed -i '59s/bind = 239.2.11.71/#bind = 239.2.11.71/'  /etc/ganglia/gmond.conf
+#      sed -i '60s/retry_bind = true/#retry_bind = true/'  /etc/ganglia/gmond.conf
+#      sed -i '64s/}/#}/' /etc/ganglia/gmond.conf
+#      sed -i '68s/tcp_accept_channel/#tcp_accept_channel/'  /etc/ganglia/gmond.conf
+#      sed -i '69s/port = 8649/#port = 8649/'  /etc/ganglia/gmond.conf
+#      sed -i '71s/gzip_output = no/#gzip_output = no/'  /etc/ganglia/gmond.conf
+#      sed -i '72s/}/#}/'  /etc/ganglia/gmond.conf
+#   tags: 
+#   - ganglia
+#   - ganglia-client
   
 - name: Restart gmond service and enable after reboot
   service:
@@ -970,6 +973,10 @@
       template:
         src: templates/cust.cfg.j2
         dest: /etc/nagios/customers/{{ orgname }}/{{ inventory_hostname }}.cfg
+    - name: Create servicegroup directory
+      file: 
+        path: /etc/nagios/servicegroups
+        state: directory
     - name: Create servicegroup {{ orgname }}.cfg
       file:
         path: /etc/nagios/servicegroups/{{ orgname }}.cfg
